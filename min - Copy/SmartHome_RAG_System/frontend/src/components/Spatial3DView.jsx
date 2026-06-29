@@ -93,15 +93,8 @@ function HouseModel({ url, currentZone, currentDevice }) {
 }
 
 const Spatial3DView = ({ currentZone, onZoneSelect, currentDevice, stats }) => {
-  const modelUrl = 'models/house.glb';
-  const [isAssetReady, setIsAssetReady] = useState(false);
-
-  // Check if model file actually exists before even trying Three.js
-  useEffect(() => {
-    fetch('/models/house.glb', { method: 'HEAD' })
-      .then(res => setIsAssetReady(res.ok))
-      .catch(() => setIsAssetReady(false));
-  }, []);
+  const modelUrl = '/models/house.glb';
+  const [isAssetReady, setIsAssetReady] = useState(true);
 
   if (!isAssetReady) {
     return (

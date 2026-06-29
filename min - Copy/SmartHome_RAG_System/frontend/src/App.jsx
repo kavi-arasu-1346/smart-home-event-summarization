@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PowerOptimizer from './pages/PowerOptimizer';
 import SpatialDigitalTwin from './pages/SpatialDigitalTwin';
+import SpatialView from './pages/SpatialView';
 
 function App() {
     return (
@@ -20,6 +21,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Login />} />
                 <Route path="/spatial-twin" element={<SpatialDigitalTwin />} />
+                <Route path="/spatial" element={<SpatialView />} />
+                <Route path="/3d" element={<SpatialView />} />
                 
                 {/* Redirect any unknown routes to home */}
                 <Route path="*" element={<Navigate to="/" replace />} />

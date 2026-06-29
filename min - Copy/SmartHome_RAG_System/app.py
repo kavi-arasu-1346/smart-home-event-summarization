@@ -6,7 +6,7 @@ import logging
 import mysql.connector
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, send_from_directory
 from flask_cors import CORS
 from config import LLM_PROVIDER, OPENAI_API_KEY, OPENAI_MODEL_NAME, GROK_API_KEY, GROK_MODEL_NAME, GROQ_API_KEY, GROQ_MODEL_NAME
 from llm_handler import OnlineLLMClient
@@ -1297,6 +1297,10 @@ def index_fallback(path):
     # We EXPLICITLY ignore anything starting with 'api/' so that API 404s stay 404s.
     if path.startswith('api/'):
         return jsonify({"error": f"API Endpoint '/{path}' not found."}), 404
+        
+    dist_dir = os.path.join(app.root_path, 'frontend', 'dist')
+    if path != "" and os.path.exists(os.path.join(dist_dir, path)):
+        return send_from_directory(dist_dir, path)
     return render_template('index.html')
 @app.route('/api/trigger_scene', methods=['POST'])
 def trigger_scene():

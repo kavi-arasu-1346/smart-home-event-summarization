@@ -1,5 +1,7 @@
 # SmartHome Cortex: AI-Driven Digital Twin & RAG Agent Portal
 
+**🌐 Live Demo**: [https://smart-home-event-summarization.vercel.app](https://smart-home-event-summarization.vercel.app)
+
 SmartHome Cortex is a state-of-the-art, full-stack home automation and monitoring platform. It integrates an immersive **3D Spatial Digital Twin** (built using React, Three.js, and Framer Motion) with a **Retrieval-Augmented Generation (RAG) AI Assistant** (powered by LangChain, FAISS, and LLM APIs like Groq/OpenAI/Grok) that dynamically translates plain English into SQL queries to query and control real-time device telemetries.
 
 Additionally, the system features a hardware integration pipeline connecting **ESP32 energy monitoring nodes** directly to a secure MySQL database.

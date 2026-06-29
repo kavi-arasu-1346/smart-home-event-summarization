@@ -29,7 +29,6 @@ class VectorStore:
                 pass
 
             # Lazy Load heavy library here to prevent Import MemoryError
-            os.environ['HF_HUB_OFFLINE'] = '1'
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(EMBEDDING_MODEL_NAME)
             
@@ -40,7 +39,6 @@ class VectorStore:
         """Creates a FAISS vector DB from historical SQL data."""
         try:
             print("Creating Vector DB from historical SQL data...")
-            os.environ['HF_HUB_OFFLINE'] = '1'
             from sentence_transformers import SentenceTransformer
             
             if not self.model:

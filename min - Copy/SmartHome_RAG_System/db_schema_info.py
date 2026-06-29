@@ -25,7 +25,7 @@ SCHEMA_INFO = {
     "oven": ["device_id", "mode", "status", "energy_consumption", "minutes_used", "timestamp"],
     "tv": ["device_id", "playback", "status", "energy_consumption", "minutes_used", "timestamp"],
     "washing_machine": ["device_id", "mode", "status", "energy_consumption", "water_consumption", "minutes_used", "timestamp"],
-    "users": ["id", "username", "email", "phone_number", "push_notifications", "password_hash"],
+    "users": ["id", "username", "email", "phone_number", "push_notifications", "password"],
     "energy_meter": ["id", "voltage", "current", "power", "kwh", "timestamp"],
 }
 
@@ -173,7 +173,7 @@ DATABASE_SCHEMA_DETAILS = {
             "email": "VARCHAR(255)",
             "phone_number": "VARCHAR(20)",
             "push_notifications": "BOOLEAN",
-            "password_hash": "VARCHAR(255)"
+            "password": "VARCHAR(255)"
         },
         "example_entry": []
     },

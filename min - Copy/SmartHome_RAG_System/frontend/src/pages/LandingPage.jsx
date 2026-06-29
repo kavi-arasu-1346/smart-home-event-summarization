@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Cpu, ShieldCheck, Activity, Brain, ArrowRight, Zap, Database, Lock, LayoutDashboard, Leaf } from 'lucide-react';
+import { Cpu, ShieldCheck, Activity, Brain, ArrowRight, Zap, Database, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LandingPage = () => {
@@ -27,6 +27,15 @@ const LandingPage = () => {
 
                     <div className="hidden md:flex items-center gap-8">
                         <a href="#features" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Features</a>
+                        <Link to="/dashboard" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Dashboard</Link>
+                        <Link to="/optimize" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Optimizer</Link>
+                        <Link to="/spatial" className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                            </span>
+                            Spatial 3D Command
+                        </Link>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -79,10 +88,10 @@ const LandingPage = () => {
                                 Get Started Now
                             </Link>
                             <Link
-                                to="/dashboard"
-                                className="w-full md:w-auto px-8 py-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white font-semibold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+                                to="/spatial"
+                                className="w-full md:w-auto px-8 py-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white font-semibold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 backdrop-blur-md hover:transform hover:-translate-y-1"
                             >
-                                <LayoutDashboard size={18} className="text-blue-400" /> Live Dashboard
+                                Spatial 3D Command
                             </Link>
                         </div>
                     </motion.div>
@@ -124,9 +133,9 @@ const LandingPage = () => {
                             desc="Your data stays local. Enterprise-grade security ensures your home data is never compromised."
                         />
                         <FeatureCard
-                            icon={<Leaf size={32} className="text-emerald-400" />}
-                            title="AI Sustainability Advisor"
-                            desc="Receive personalized, LLM-driven protocols to optimize power efficiency and reduce footprint."
+                            icon={<Zap size={32} className="text-yellow-400" />}
+                            title="Instant Actions"
+                            desc="Control devices directly through chat with verified command execution protocols."
                         />
                     </div>
                 </div>
@@ -140,7 +149,9 @@ const LandingPage = () => {
                         <span className="text-slate-500 font-semibold">SmartHome Cortex &copy; 2026</span>
                     </div>
                     <div className="flex gap-6 text-slate-500 text-sm">
-                        <span className="italic opacity-50">Enterprise Verified Hub</span>
+                        <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+                        <a href="#" className="hover:text-white transition-colors">Contact Support</a>
                     </div>
                 </div>
             </footer>

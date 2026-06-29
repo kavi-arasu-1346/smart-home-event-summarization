@@ -109,7 +109,7 @@ class OnlineLLMClient:
                         print(f"Please open the '.env' file and replace '{self.provider.upper()}_API_KEY' with your actual key.")
                         print("!"*50 + "\n")
                         import sys
-                        raise RuntimeError(f"AUTHENTICATION ERROR: Invalid {self.provider.upper()} API Key. Please update .env")
+                        sys.exit(1)
                     error_msg += f" Response: {e.response.text}"
                 
                 logging.error(error_msg)

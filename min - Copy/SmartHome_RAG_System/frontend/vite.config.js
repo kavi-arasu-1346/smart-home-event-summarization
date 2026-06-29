@@ -7,23 +7,9 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            '/api': {
-                target: 'http://localhost:5002',
-                changeOrigin: true,
-                secure: false,
-            },
-            '/process_query': {
-                target: 'http://localhost:5002',
-                changeOrigin: true
-            },
-            '/detect_hallucination': {
-                target: 'http://127.0.0.1:5002',
-                changeOrigin: true
-            },
-            '/get_live_events': {
-                target: 'http://127.0.0.1:5002',
-                changeOrigin: true
-            }
+            '/process_query': 'http://127.0.0.1:5002',
+            '/detect_hallucination': 'http://127.0.0.1:5002',
+            '/get_live_events': 'http://127.0.0.1:5002'
         }
     }
 })

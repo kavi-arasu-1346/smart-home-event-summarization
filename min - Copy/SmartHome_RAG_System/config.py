@@ -33,7 +33,7 @@ GROK_MODEL_NAME = "grok-beta"
 
 # Groq Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL_NAME = "llama-3.1-8b-instant" # Faster, higher limits
+GROQ_MODEL_NAME = "llama-3.3-70b-versatile" # More powerful, better reasoning and SQL
 
 # App Config
 MAX_RETRIES = 3

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, RotateCw, Home, Cpu, BrainCircuit, MessageSquareText, Zap, Droplets, Fan, Tv, Lightbulb, Wind, Flame, ChevronLeft, Activity, Mic, MicOff, Volume2, LayoutDashboard, Layout } from 'lucide-react';
+import { Send, RotateCw, Home, Cpu, BrainCircuit, MessageSquareText, Zap, Droplets, Fan, Tv, Lightbulb, Wind, Flame, ChevronLeft, Activity, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MessageBubble from '../components/MessageBubble';
-import DashboardView from '../components/DashboardView';
+import HouseViewer from '../components/HouseViewer';
 
 const ZONES = [
     { id: 'Room1', name: 'Zone 1 (Living Room)' },
@@ -133,6 +133,83 @@ function ChatInterface() {
     // Mobile Tab State
     const [activeMobileTab, setActiveMobileTab] = useState('adviser');
 
+    // Speech Recognition state
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef(null);
+
+    // Device statuses for real-time bulb displays
+    const [deviceStatuses, setDeviceStatuses] = useState({
+        Room1: 'off',
+        Room2: 'off',
+        Room3: 'off',
+        Kitchen: 'off'
+    });
+
+    useEffect(() => {
+        const fetchStatuses = async () => {
+            try {
+                const res = await fetch('/get_live_events');
+                if (res.ok) {
+                    const data = await res.json();
+                    const statuses = { Room1: 'off', Room2: 'off', Room3: 'off', Kitchen: 'off' };
+                    data.forEach(device => {
+                        if (device.device_type === 'light') {
+                            statuses[device.room] = device.status || 'off';
+                        }
+                    });
+                    setDeviceStatuses(statuses);
+                }
+            } catch (err) {
+                console.error("Failed to fetch live device events", err);
+            }
+        };
+        fetchStatuses();
+        const interval = setInterval(fetchStatuses, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = 'en-US';
+
+            rec.onstart = () => {
+                setIsListening(true);
+            };
+
+            rec.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                setQuery(prev => prev + (prev ? " " : "") + transcript);
+            };
+
+            rec.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                setIsListening(false);
+            };
+
+            rec.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = rec;
+        }
+    }, []);
+
+    const toggleListening = () => {
+        if (!recognitionRef.current) {
+            alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.");
+            return;
+        }
+        if (isListening) {
+            recognitionRef.current.stop();
+        } else {
+            recognitionRef.current.start();
+        }
+    };
+
     const [messages, setMessages] = useState([
         {
             id: 'welcome',
@@ -142,64 +219,7 @@ function ChatInterface() {
         }
     ]);
 
-    const [isDashboardOpen, setIsDashboardOpen] = useState(true);
-    const [dashRefreshTrigger, setDashRefreshTrigger] = useState(0);
-
     const messagesEndRef = useRef(null);
-    const recognitionRef = useRef(null);
-
-    const [isListening, setIsListening] = useState(false);
-    const [isSpeaking, setIsSpeaking] = useState(false);
-
-    // Initialize Speech Recognition
-    useEffect(() => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = false;
-            recognitionRef.current.lang = 'en-US';
-
-            recognitionRef.current.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                setQuery(transcript);
-                setIsListening(false);
-                // Optionally auto-process
-                // processQuery(transcript);
-            };
-
-            recognitionRef.current.onerror = (event) => {
-                console.error("Speech recognition error:", event.error);
-                setIsListening(false);
-            };
-
-            recognitionRef.current.onend = () => {
-                setIsListening(false);
-            };
-        }
-    }, []);
-
-    const toggleListening = () => {
-        if (isListening) {
-            recognitionRef.current?.stop();
-        } else {
-            recognitionRef.current?.start();
-            setIsListening(true);
-        }
-    };
-
-    const speakResponse = (text) => {
-        if (!isSpeaking) return;
-        window.speechSynthesis.cancel();
-        const utterance = new SynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-    };
-
-    // Correcting a small typo in common browser global name
-    const SynthesisUtterance = window.SpeechSynthesisUtterance || window.webkitSpeechSynthesisUtterance;
-
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -237,11 +257,6 @@ function ChatInterface() {
         try {
             const formData = new FormData();
             formData.append('question', userMsg.content);
-            
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            if (user.id !== undefined) {
-                formData.append('user_id', user.id);
-            }
 
             const res = await fetch('/process_query', {
                 method: 'POST',
@@ -278,21 +293,15 @@ function ChatInterface() {
                 was_regenerated: data.was_regenerated,
                 original_summary: data.original_summary,
                 data_source: data.data_source,
-                verification_status: data.verification_status,
-                trust_score: data.trust_score,
-                confidence_score: data.confidence_score,
-                reason: data.reason,
+                verification_status: verificationData?.status || data.verification_status,
+                trust_score: verificationData?.provenance_score ?? data.trust_score,
+                confidence_score: verificationData?.confidence_score ?? data.confidence_score,
+                reason: verificationData?.reason || data.reason,
                 verification: verificationData,
                 timestamp: new Date().toISOString()
             };
 
             setMessages(prev => [...prev, botMsg]);
-            
-            // Voice Analysis: Hear the bot reply
-            speakResponse(data.final_summary);
-
-            // Reactive Dashboard: Trigger refresh
-            setDashRefreshTrigger(prev => prev + 1);
 
         } catch (err) {
             console.warn("Backend process_query failed, generating intelligent mock response:", err);
@@ -370,8 +379,6 @@ function ChatInterface() {
                 timestamp: new Date().toISOString()
             };
             setMessages(prev => [...prev, botMsg]);
-            speakResponse(summary);
-            setDashRefreshTrigger(prev => prev + 1);
         } finally {
             setIsTyping(false);
         }
@@ -415,17 +422,13 @@ function ChatInterface() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsDashboardOpen(!isDashboardOpen)}
-                        className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isDashboardOpen ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}`}
-                    >
-                        <LayoutDashboard size={16} /> {isDashboardOpen ? "Hide Metrics" : "Show Metrics"}
-                    </button>
-                    <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 overflow-hidden hidden sm:block">
-                        <img src="https://ui-avatars.com/api/?name=Admin&background=3b82f6&color=fff" alt="User" />
-                    </div>
-                </div>
+                <Link
+                    to="/spatial"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-blue-600/25 border border-blue-500 hover:scale-105 active:scale-95"
+                >
+                    <Activity size={14} className="animate-pulse" />
+                    3D Spatial View
+                </Link>
             </div>
 
             {/* Horizontal Zone Selector */}
@@ -453,13 +456,13 @@ function ChatInterface() {
                     onClick={() => setActiveMobileTab('adviser')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors flex justify-center items-center gap-2 ${activeMobileTab === 'adviser' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/10' : 'text-slate-500 hover:text-slate-300'}`}
                 >
-                    <MessageSquareText size={16} /> Assistant 1
+                    <MessageSquareText size={16} /> Adviser
                 </button>
                 <button
                     onClick={() => setActiveMobileTab('analyzer')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors flex justify-center items-center gap-2 ${activeMobileTab === 'analyzer' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/10' : 'text-slate-500 hover:text-slate-300'}`}
                 >
-                    <BrainCircuit size={16} /> Assistant 2
+                    <BrainCircuit size={16} /> Analyzer
                 </button>
             </div>
 
@@ -467,7 +470,7 @@ function ChatInterface() {
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
                 {/* ---------- Assistant 1: Suggestion Bot ---------- */}
-                <div className={`w-full md:w-1/3 lg:w-1/4 bg-[#11131e] border-r border-slate-800/60 flex-col pt-6 pb-6 shadow-[inset_-10px_0_20px_rgba(0,0,0,0.2)] ${activeMobileTab === 'adviser' ? 'flex' : 'hidden md:flex'}`}>
+                <div className={`w-full md:w-[30%] bg-[#11131e] border-r border-slate-800/60 flex-col pt-6 pb-6 shadow-[inset_-10px_0_20px_rgba(0,0,0,0.2)] ${activeMobileTab === 'adviser' ? 'flex' : 'hidden md:flex'}`}>
                     <div className="px-6 mb-6 text-center md:text-left">
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-bold tracking-wide text-xs uppercase mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
                             <MessageSquareText size={14} /> Assistant 1 (Adviser)
@@ -480,6 +483,45 @@ function ChatInterface() {
                                 ? "Select a device to view available queries."
                                 : "Click a suggestion below to analyze."}
                         </p>
+                    </div>
+
+                    {/* ECO-SAVING QUICK ACTIONS */}
+                    <div className="px-6 mb-6">
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl shadow-[0_4px_20px_rgba(16,185,129,0.05)]">
+                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-3">
+                                <Zap size={14} className="fill-emerald-400/20 text-emerald-400" /> Eco-Energy Suggestions
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => handleSuggestionSelect("turn off Room 1 light")}
+                                    className="flex items-center gap-2 text-left bg-slate-800/40 hover:bg-slate-700/60 text-slate-300 hover:text-white px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-700/30 hover:border-emerald-500/30 transition-all active:scale-95 group"
+                                >
+                                    <span className="p-1 bg-[#1e293b] rounded-lg text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">💡</span>
+                                    Turn off Room 1 Light
+                                </button>
+                                <button
+                                    onClick={() => handleSuggestionSelect("turn off Room 1 fan")}
+                                    className="flex items-center gap-2 text-left bg-slate-800/40 hover:bg-slate-700/60 text-slate-300 hover:text-white px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-700/30 hover:border-emerald-500/30 transition-all active:scale-95 group"
+                                >
+                                    <span className="p-1 bg-[#1e293b] rounded-lg text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">🔌</span>
+                                    Turn off Room 1 Fan
+                                </button>
+                                <button
+                                    onClick={() => handleSuggestionSelect("set the ac in Room3 to 24 degrees")}
+                                    className="flex items-center gap-2 text-left bg-slate-800/40 hover:bg-slate-700/60 text-slate-300 hover:text-white px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-700/30 hover:border-emerald-500/30 transition-all active:scale-95 group"
+                                >
+                                    <span className="p-1 bg-[#1e293b] rounded-lg text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">🍃</span>
+                                    Set AC to Eco-Mode (24°C)
+                                </button>
+                                <button
+                                    onClick={() => handleSuggestionSelect("Which devices are currently consuming the most energy and how can I reduce it?")}
+                                    className="flex items-center gap-2 text-left bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 text-emerald-400 hover:text-emerald-300 px-3 py-2.5 rounded-xl text-xs font-bold border border-emerald-500/20 hover:border-emerald-500/40 transition-all active:scale-95 group shadow-sm"
+                                >
+                                    <span className="p-1 bg-[#1e293b] rounded-lg text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">⚡</span>
+                                    Analyze & Reduce Wastage
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto px-6 custom-scrollbar">
@@ -526,6 +568,24 @@ function ChatInterface() {
                                             <ChevronLeft size={16} /> Back to Devices
                                         </button>
 
+                                        {/* Quick Actions for Light */}
+                                        {currentDevice.id === 'light' && (
+                                            <div className="flex gap-3 mb-2">
+                                                <button 
+                                                    onClick={() => processQuery(`turn on the ${currentDevice.name.toLowerCase()} in ${ZONES.find(z => z.id === currentZone)?.name}`)} 
+                                                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95"
+                                                >
+                                                    <Lightbulb size={14} className="fill-emerald-400/20" /> Turn ON
+                                                </button>
+                                                <button 
+                                                    onClick={() => processQuery(`turn off the ${currentDevice.name.toLowerCase()} in ${ZONES.find(z => z.id === currentZone)?.name}`)} 
+                                                    className="flex-1 flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(244,63,94,0.1)] hover:shadow-[0_0_20px_rgba(244,63,94,0.2)] active:scale-95"
+                                                >
+                                                    <Lightbulb size={14} className="fill-rose-400/20 rotate-180" /> Turn OFF
+                                                </button>
+                                            </div>
+                                        )}
+
                                         {DEVICE_QUESTIONS[currentZone]?.[currentDevice.id]?.map((q, idx) => (
                                             <motion.button
                                                 key={q.text}
@@ -556,6 +616,7 @@ function ChatInterface() {
                         </div>
                     </div>
                 </div>
+
 
                 {/* ---------- Assistant 2: Main Analyzer Bot ---------- */}
                 <div className={`flex-1 flex-col relative w-full bg-[#0f111a] ${activeMobileTab === 'analyzer' ? 'flex' : 'hidden md:flex'}`}>
@@ -649,40 +710,33 @@ function ChatInterface() {
                                                 if (!hasInteracted) setHasInteracted(true);
                                             }}
                                         >
-                                            <button
-                                                onClick={() => setIsSpeaking(!isSpeaking)}
-                                                className={`p-2.5 rounded-lg mb-1.5 ml-1.5 transition-all ${isSpeaking ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700'}`}
-                                                title={isSpeaking ? "Narrate bot replies: ON" : "Narrate bot replies: OFF"}
-                                            >
-                                                <Volume2 size={20} className={isSpeaking ? "animate-pulse" : ""} />
-                                            </button>
-
                                             <textarea
                                                 className="flex-1 bg-transparent border-none outline-none text-slate-100 placeholder-slate-500 px-4 py-3 resize-none custom-scrollbar font-normal text-[15px] leading-relaxed"
-                                                placeholder={isListening ? "Listening..." : "Type or drag a question here..."}
+                                                placeholder="Type or drag a question here..."
                                                 rows={1}
                                                 style={{ minHeight: '52px', maxHeight: '120px' }}
                                                 value={query}
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyDown={handleKeyDown}
                                             />
-
                                             <button
+                                                type="button"
                                                 onClick={toggleListening}
                                                 className={`
-                                                    h-12 w-12 flex items-center justify-center rounded-xl mb-0.5 transition-all duration-300
-                                                    ${isListening ? 'bg-red-500 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'bg-slate-800 text-slate-400 hover:text-blue-400 border border-slate-700'}
+                                                    h-12 w-12 flex items-center justify-center rounded-xl mb-0.5 transition-all duration-300 shrink-0
+                                                    ${isListening 
+                                                        ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
+                                                        : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700'}
                                                 `}
-                                                title={isListening ? "Stop listening" : "Start voice input"}
+                                                title={isListening ? "Listening... Click to stop" : "Voice typing"}
                                             >
-                                                {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+                                                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                                             </button>
-
                                             <button
                                                 onClick={() => processQuery()}
                                                 disabled={isTyping || !query.trim()}
                                                 className={`
-                                                    h-12 w-12 flex items-center justify-center rounded-xl mb-0.5 mx-0.5 transition-all duration-300
+                                                    h-12 w-12 flex items-center justify-center rounded-xl mb-0.5 mr-0.5 transition-all duration-300 shrink-0
                                                     ${isTyping || !query.trim()
                                                         ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                                                         : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 active:scale-95'}
@@ -698,28 +752,6 @@ function ChatInterface() {
                     </AnimatePresence>
 
                 </div>
-
-                {/* ---------- Dashboard Integrated Panel ---------- */}
-                <AnimatePresence>
-                    {isDashboardOpen && (
-                        <motion.div
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: '28%', opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            className="hidden lg:flex flex-col border-l border-slate-800/80 bg-[#0c0e16] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] relative z-10"
-                        >
-                            <div className="flex-1 overflow-hidden h-full">
-                                <DashboardView 
-                                    isCompact={true} 
-                                    refreshTrigger={dashRefreshTrigger} 
-                                    onZoneSelect={setCurrentZone}
-                                    currentZone={currentZone}
-                                    currentDevice={currentDevice}
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
             </div>
         </div>

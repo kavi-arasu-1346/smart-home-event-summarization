@@ -201,9 +201,42 @@ d:/werror/
 
 ---
 
-## 🌐 Deployment Guidelines
+## 🌐 Deployment & Vercel Guidelines
 
-For deploying the project to a live site:
+This project is optimized for automated deployment on Vercel (frontend) and external containers like Render/Railway (backend).
 
-1. **Frontend (Vercel)**: Connect your repository to Vercel, select `min - Copy/SmartHome_RAG_System/frontend` as the root directory, select **Vite** as the preset, and deploy.
-2. **Backend (Render / HuggingFace)**: Host the Python backend separately. Update the base URL mapping inside the React source code (`import.meta.env.VITE_API_URL`) to link the live frontend to your live Flask backend.
+### 1. Frontend Vercel Setup
+1. Import your GitHub repository to **Vercel**.
+2. Under **Project Settings**, configure the following:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `min - Copy/SmartHome_RAG_System/frontend`
+3. Click **Deploy**.
+
+### 2. Client-Side Routing Fallbacks (`vercel.json`)
+To prevent **404 Page Not Found** errors when hard-refreshing routes like `/chat`, `/dashboard`, or `/spatial`, a `vercel.json` routing configuration file is placed inside the `frontend/` directory:
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+This forces Vercel to route all client-side page transitions back to Vite's `index.html` entrypoint so React Router can process them.
+
+### 3. How to Refresh & Redeploy Vercel
+Every time you push new code changes to the `main` branch on GitHub:
+- Vercel automatically detects the push and starts a **production build pipeline**.
+- The changes are deployed and the live site updates within seconds without requiring manual input.
+
+#### 🔄 Manual Build Refresh Steps:
+If you want to manually trigger a fresh rebuild on Vercel:
+1. Log into your [Vercel Dashboard](https://vercel.com).
+2. Click on your **SmartHome Cortex** project.
+3. Navigate to the **Deployments** tab.
+4. Click the **three dots (...)** next to your latest deployment.
+5. Select **Redeploy** from the dropdown menu and confirm.
+6. Once the status shows **Ready**, reload your browser page using `Ctrl + F5` (force-refresh) to clear local CDN caches.
+
+### 4. Backend Server Setup
+Host the Flask server (`app.py`) on platforms like Render or Railway. Make sure to link the backend URL into your frontend code configurations so the live RAG assistant is bridged to your database.
+
